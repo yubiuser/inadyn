@@ -69,12 +69,28 @@ int log_level(char *arg)
 	return 0;
 }
 
+static const char* get_log_level_name(int prio) {
+    for (int i = 0; prioritynames[i].c_name; i++) {
+        if (prioritynames[i].c_val == prio) {
+            return prioritynames[i].c_name;
+        }
+    }
+    return "UNKNOWN";
+}
+
 void vlogit(int prio, const char *fmt, va_list args)
 {
-	if (enabled && level != INTERNAL_NOPRI)
-		vsyslog(prio, fmt, args);
-	else if (prio <= level)
-		vfprintf(stderr, fmt, args), fprintf(stderr, "\n");
+    const char *log_level_name = get_log_level_name(prio);
+
+    if (enabled && level != INTERNAL_NOPRI) {
+        char prio_fmt[1024];
+        snprintf(prio_fmt, sizeof(prio_fmt), "[%s] %s", log_level_name, fmt);
+        vsyslog(prio, prio_fmt, args);
+    } else if (prio <= level) {
+        fprintf(stderr, "[%s] ", log_level_name);
+        vfprintf(stderr, fmt, args);
+        fprintf(stderr, "\n");
+    }
 }
 
 void logitf(int prio, const char *fmt, ...)
