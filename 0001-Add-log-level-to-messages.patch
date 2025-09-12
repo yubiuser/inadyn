@@ -1,0 +1,50 @@
+From 7663a18df97d018edcc1de70a20b054fa9d5ef34 Mon Sep 17 00:00:00 2001
+From: yubiuser <github@yubiuser.dev>
+Date: Mon, 3 Feb 2025 22:54:41 +0100
+Subject: [PATCH] Add log level to messages
+
+Signed-off-by: yubiuser <github@yubiuser.dev>
+---
+ src/log.c | 24 ++++++++++++++++++++----
+ 1 file changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/src/log.c b/src/log.c
+index 6746046..077d2e5 100644
+--- a/src/log.c
++++ b/src/log.c
+@@ -69,12 +69,28 @@ int log_level(char *arg)
+ 	return 0;
+ }
+ 
++static const char* get_log_level_name(int prio) {
++    for (int i = 0; prioritynames[i].c_name; i++) {
++        if (prioritynames[i].c_val == prio) {
++            return prioritynames[i].c_name;
++        }
++    }
++    return "UNKNOWN";
++}
++
+ void vlogit(int prio, const char *fmt, va_list args)
+ {
+-	if (enabled && level != INTERNAL_NOPRI)
+-		vsyslog(prio, fmt, args);
+-	else if (prio <= level)
+-		vfprintf(stderr, fmt, args), fprintf(stderr, "\n");
++    const char *log_level_name = get_log_level_name(prio);
++
++    if (enabled && level != INTERNAL_NOPRI) {
++        char prio_fmt[1024];
++        snprintf(prio_fmt, sizeof(prio_fmt), "[%s] %s", log_level_name, fmt);
++        vsyslog(prio, prio_fmt, args);
++    } else if (prio <= level) {
++        fprintf(stderr, "[%s] ", log_level_name);
++        vfprintf(stderr, fmt, args);
++        fprintf(stderr, "\n");
++    }
+ }
+ 
+ void logitf(int prio, const char *fmt, ...)
+-- 
+2.43.0
+
